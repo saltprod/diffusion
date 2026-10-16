@@ -37,8 +37,17 @@ h2 .mono{font-weight:400}
 .synth{max-width:560px}
 .cols,.pads{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .cols{margin-bottom:8px}
-.cols span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.pad,.pill{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.trk{all:unset;box-sizing:border-box;cursor:pointer;min-width:0;display:flex;align-items:center;gap:6px;padding:4px 0;font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--soft)}
+.trk span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.trk:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+/* padlock: body + shackle; open and faint until locked */
+.lk{flex:none;position:relative;width:8px;height:6px;margin-top:4px;background:currentColor;border-radius:1px;opacity:.35;transition:opacity .15s}
+.lk::before{content:"";position:absolute;left:1px;bottom:5px;width:6px;height:5px;box-sizing:border-box;border:1.3px solid currentColor;border-bottom:0;border-radius:3px 3px 0 0;transform:translateY(-1.5px) translateX(1.5px);transition:transform .15s}
+.trk[aria-pressed="true"]{color:var(--ink)}
+.trk[aria-pressed="true"] .lk{opacity:1}
+.trk[aria-pressed="true"] .lk::before{transform:none}
+.pads .pad.locked .rc::after{content:" · lock"}
+.pad,.pill,.trk{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .pad{all:unset;box-sizing:border-box;height:66px;min-width:0;padding:8px 9px;background:var(--idle);border:1.5px solid var(--idle);border-radius:6px;position:relative;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;transition:background .12s}
 .pad:hover{background:var(--wait)}
 .pad:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
@@ -88,21 +97,20 @@ footer{margin-top:72px;padding-top:16px;border-top:1px solid var(--hair);display
 </head>
 <body>
 <div class="wrap">
-  <div class="mono">Школа Ableton · Заур и Илья</div>
   <h1><span class="pname">Diffusion</span><em aria-hidden="true"></em></h1>
   <p class="lead">Учим делать музыку в Ableton: от первого бита до сведения. Видеокурсы, занятия вживую и онлайн.</p>
 
   <section aria-label="Звуковой модуль">
     <h2>Звуковой модуль <span class="mono">FM · ля минор</span></h2>
     <div class="synth">
-      <div class="cols mono"><span>Барабаны</span><span>Бас</span><span>Аккорды</span><span>Мелодия</span></div>
+      <div class="cols mono"><button type="button" class="trk" data-tr="0" aria-pressed="false" title="Lock: Regen и Spice не трогают дорожку"><span>Барабаны</span><i class="lk" aria-hidden="true"></i></button><button type="button" class="trk" data-tr="1" aria-pressed="false" title="Lock: Regen и Spice не трогают дорожку"><span>Бас</span><i class="lk" aria-hidden="true"></i></button><button type="button" class="trk" data-tr="2" aria-pressed="false" title="Lock: Regen и Spice не трогают дорожку"><span>Аккорды</span><i class="lk" aria-hidden="true"></i></button><button type="button" class="trk" data-tr="3" aria-pressed="false" title="Lock: Regen и Spice не трогают дорожку"><span>Мелодия</span><i class="lk" aria-hidden="true"></i></button></div>
       <div class="pads" id="pads"><button type="button" class="pad" data-tr="0" data-ci="0" aria-label="Барабаны: Four"><span class="lbl">Four</span><span class="rc">Classic</span><i class="bar"></i></button><button type="button" class="pad" data-tr="1" data-ci="0" aria-label="Бас: Pulse"><span class="lbl">Pulse</span><span class="rc">FM</span><i class="bar"></i></button><button type="button" class="pad" data-tr="2" data-ci="0" aria-label="Аккорды: Pad"><span class="lbl">Pad</span><span class="rc">FM</span><i class="bar"></i></button><button type="button" class="pad" data-tr="3" data-ci="0" aria-label="Мелодия: Hook"><span class="lbl">Hook</span><span class="rc">FM</span><i class="bar"></i></button><button type="button" class="pad" data-tr="0" data-ci="1" aria-label="Барабаны: Boom bap"><span class="lbl">Boom bap</span><span class="rc">Classic</span><i class="bar"></i></button><button type="button" class="pad" data-tr="1" data-ci="1" aria-label="Бас: Syncop"><span class="lbl">Syncop</span><span class="rc">FM</span><i class="bar"></i></button><button type="button" class="pad" data-tr="2" data-ci="1" aria-label="Аккорды: Stabs"><span class="lbl">Stabs</span><span class="rc">FM</span><i class="bar"></i></button><button type="button" class="pad" data-tr="3" data-ci="1" aria-label="Мелодия: Arp"><span class="lbl">Arp</span><span class="rc">FM</span><i class="bar"></i></button></div>
       <div class="btns">
         <button type="button" class="pill regen" id="regen" title="Новые клипы (R)"><span class="g"></span>Regen</button>
         <button type="button" class="pill" id="dice" title="Новые значения звука и грува (D)"><span class="die" aria-hidden="true">⚄</span>Dice</button>
         <button type="button" class="pill" id="spice" title="Новый тембр каждого клипа (S)"><span class="chili" aria-hidden="true"></span>Spice</button>
       </div>
-      <div class="info mono" id="info" aria-live="polite">Тап по клипу — старт с начала такта</div>
+      <div class="info mono" id="info" aria-live="polite">Тап по клипу — старт · по названию дорожки — lock</div>
       <p class="nojs" id="nojs">Это превью файла — здесь звук не играет. Открой страницу по ссылке или в браузере.<span id="errOut"></span></p>
     </div>
   </section>
@@ -139,11 +147,11 @@ var SY=[
   {n:"Four",k:"x...x...x...x...",s:"....x.......x...",h:"..x...x...x...x."},
   {n:"Boom bap",k:"x......x..x.....",s:"....x.......x...",h:"x.x.x.x.x.x.x.x."}]},
  {kind:"bass",clips:[
-  {n:"Pulse",notes:[0,2,4,6,8,10,12,14].map(function(s){return [s,33,1.5]}).concat([16,18,20,22,24,26,28,30].map(function(s){return [s,29,1.5]}))},
-  {n:"Syncop",notes:[[0,33,3],[3,45,1],[6,33,2],[10,36,2],[16,29,3],[19,41,1],[22,29,2],[26,31,2]]}]},
+  {n:"Pulse",pr:["Am","F"],notes:[0,2,4,6,8,10,12,14].map(function(s){return [s,33,1.5]}).concat([16,18,20,22,24,26,28,30].map(function(s){return [s,29,1.5]}))},
+  {n:"Syncop",pr:["Am","F"],notes:[[0,33,3],[3,45,1],[6,33,2],[10,36,2],[16,29,3],[19,41,1],[22,29,2],[26,31,2]]}]},
  {kind:"keys",clips:[
-  {n:"Pad",notes:[[0,[57,60,64],15],[16,[53,57,60],15]]},
-  {n:"Stabs",notes:[2,6,10,14].map(function(s){return [s,[57,60,64,67],1.5]}).concat([18,22,26,30].map(function(s){return [s,[53,57,60,64],1.5]}))}]},
+  {n:"Pad",pr:["Am","F"],notes:[[0,[57,60,64],15],[16,[53,57,60],15]]},
+  {n:"Stabs",pr:["Am","F"],notes:[2,6,10,14].map(function(s){return [s,[57,60,64,67],1.5]}).concat([18,22,26,30].map(function(s){return [s,[53,57,60,64],1.5]}))}]},
  {kind:"lead",clips:[
   {n:"Hook",notes:[[0,76,2],[2,74,2],[4,72,4],[10,69,2],[12,72,2],[16,79,3],[19,76,3],[22,74,2],[28,72,4]]},
   {n:"Arp",notes:[69,72,76,79,69,72,76,79,65,69,72,76,65,69,72,76].map(function(m,i){return [i*2,m+12,1.5]})}]}
@@ -331,19 +339,25 @@ function genLead(){
   for(var i=0;i<32;i++)if(Math.random()<dn||i===0){j=Math.max(0,Math.min(sc.length-1,j+pick([-2,-1,-1,0,1,1,2])));var len=pick([1,1,2,2,3,4]);notes.push([i,sc[j],len]);i+=len-1}
   return notes;
 }
+var locks=[0,0,0,0];
+// a locked bass or chords clip keeps its chord progression, so the new tracks around it stay in harmony
 function regen(){
-  var used={},nm=function(){var w;do{w=pick(WORDS)}while(used[w]);used[w]=1;return w};
-  for(var ci=0;ci<NC;ci++){
-    var pr=pick(PROG),d=genDrums();d.n=nm();
-    SY[0].clips[ci]=d;
-    SY[1].clips[ci]={n:nm(),notes:genBass(pr),tim:{ratio:pick([1,1,.5,2,3]),index:rnd(.8,4)}};
-    SY[2].clips[ci]={n:nm(),notes:genKeys(pr),tim:{ratio:pick([1,2,3,.5,14]),index:rnd(.5,2.6)}};
-    SY[3].clips[ci]={n:nm(),notes:genLead(),tim:{ratio:pick([1,2,3.5,1.41,5]),index:rnd(.8,4)}};
+  if(locks.every(Boolean)){say("<b>Regen</b> · все дорожки под замком");return}
+  var used={},nm=function(){var w;do{w=pick(WORDS)}while(used[w]);used[w]=1;return w},pr;
+  for(var tr=0;tr<NT;tr++)if(locks[tr])for(var ci=0;ci<NC;ci++)used[SY[tr].clips[ci].n]=1;
+  for(ci=0;ci<NC;ci++){
+    pr=(locks[1]&&SY[1].clips[ci].pr)||(locks[2]&&SY[2].clips[ci].pr)||pick(PROG);
+    if(!locks[0]){var d=genDrums();d.n=nm();SY[0].clips[ci]=d}
+    if(!locks[1])SY[1].clips[ci]={n:nm(),pr:pr,notes:genBass(pr),tim:{ratio:pick([1,1,.5,2,3]),index:rnd(.8,4)}};
+    if(!locks[2])SY[2].clips[ci]={n:nm(),pr:pr,notes:genKeys(pr),tim:{ratio:pick([1,2,3,.5,14]),index:rnd(.5,2.6)}};
+    if(!locks[3])SY[3].clips[ci]={n:nm(),notes:genLead(),tim:{ratio:pick([1,2,3.5,1.41,5]),index:rnd(.8,4)}};
   }
+  var n=locks.filter(function(l){return !l}).length*NC;
   paintLabels(true);
-  say("<b>Regen</b> · "+NT*NC+" новых клипов · "+pr.join(" → "));
+  say("<b>Regen</b> · "+n+" новых клипов · "+pr.join(" → ")+(locks.some(Boolean)?" · lock держит "+locked():""));
   spinOnce(document.querySelector("#regen .g"),"spin");
 }
+function locked(){return TR.filter(function(_,i){return locks[i]}).join(", ").toLowerCase()}
 /* Spice: like Regen, but for the sound - every clip gets a new recipe (or kit), the notes stay */
 function newRecipe(old){
   var r;do{r=pick(RECIPES)}while(old&&r.n===old.n);
@@ -351,11 +365,12 @@ function newRecipe(old){
 }
 function spice(){
   for(var ci=0;ci<NC;ci++){
-    var c=SY[0].clips[ci],k;do{k=pick(KITS)}while(k===(c.kit||KIT0));c.kit=k;
-    for(var tr=1;tr<NT;tr++)SY[tr].clips[ci].rc=newRecipe(SY[tr].clips[ci].rc);
+    var c=SY[0].clips[ci],k;if(!locks[0]){do{k=pick(KITS)}while(k===(c.kit||KIT0));c.kit=k}
+    for(var tr=1;tr<NT;tr++)if(!locks[tr])SY[tr].clips[ci].rc=newRecipe(SY[tr].clips[ci].rc);
   }
+  if(locks.every(Boolean)){say("<b>Spice</b> · все дорожки под замком");return}
   paintLabels(true);
-  var hot=[0,1,2,3].map(function(tr){var c=SY[tr].clips[playing[tr]!==null?playing[tr]:0];return tr?c.rc.n:c.kit.n});
+  var hot=[0,1,2,3].map(function(tr){var c=SY[tr].clips[playing[tr]!==null?playing[tr]:0];return locks[tr]?"lock":tr?(c.rc?c.rc.n:"FM"):(c.kit||KIT0).n});
   say("<b>Spice</b> · "+hot.join(" · "));
 }
 /* Dice: new values for the hidden sound and groove knobs, inside ranges that stay musical */
@@ -441,7 +456,8 @@ function paintLabels(flash){
     var b=padEls[tr][ci],c=SY[tr].clips[ci];
     b.querySelector(".rc").textContent=tr?(c.rc?c.rc.n:"FM"):(c.kit||KIT0).n;
     b.setAttribute("aria-label",TR[tr]+": "+c.n);
-    if(flash){b.classList.remove("flash");void b.offsetWidth;b.style.animationDelay=(tr*40+ci*70)+"ms";b.classList.add("flash")}
+    b.classList.toggle("locked",!!locks[tr]);
+    if(flash&&!locks[tr]){b.classList.remove("flash");void b.offsetWidth;b.style.animationDelay=(tr*40+ci*70)+"ms";b.classList.add("flash")}
   }
   lastLbl=[];
 }
@@ -449,6 +465,9 @@ paintLabels(false);
 padsEl.addEventListener("animationend",function(e){if(e.animationName==="flash"){e.target.classList.remove("flash");e.target.style.animationDelay=""}});
 
 document.getElementById("regen").addEventListener("click",regen);
+[].forEach.call(document.querySelectorAll(".trk"),function(b){var tr=+b.dataset.tr;
+  b.addEventListener("click",function(){locks[tr]=locks[tr]?0:1;b.setAttribute("aria-pressed",!!locks[tr]);paintLabels(false);
+    say("<b>"+TR[tr]+"</b> · "+(locks[tr]?"lock — Regen и Spice не трогают":"unlock"))})});
 document.getElementById("dice").addEventListener("click",dice);
 document.getElementById("spice").addEventListener("click",spice);
 document.addEventListener("keydown",function(e){
