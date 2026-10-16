@@ -222,18 +222,80 @@ var mtof=function(m){return 440*Math.pow(2,(m-69)/12)};
 function initAudio(){
   var AC=window.AudioContext||window.webkitAudioContext;
   actx=new AC();
-  var comp=actx.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;comp.connect(actx.destination);
+  var lim=actx.createDynamicsCompressor();lim.threshold.value=-2;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.001;lim.release.value=.1;lim.connect(actx.destination);
+  var comp=actx.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;comp.connect(lim);
   master=actx.createGain();master.gain.value=.8;master.connect(comp);
   dry=actx.createGain();dry.connect(master);
-  var conv=actx.createConvolver(),len=Math.floor(actx.sampleRate*2.4),ir=actx.createBuffer(2,len,actx.sampleRate);
-  for(var c=0;c<2;c++){var d=ir.getChannelData(c);for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
-  conv.buffer=ir;revSend=actx.createGain();revSend.connect(conv);conv.connect(master);
-  noiseBuf=actx.createBuffer(1,actx.sampleRate,actx.sampleRate);var nd=noiseBuf.getChannelData(0);for(i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
-  buses=SY.map(function(tr,i){var g=actx.createGain();g.connect(dry);var s=actx.createGain();s.gain.value=i===0?.3:1;g.connect(s);s.connect(revSend);return g});
+  var conv=actx.createConvolver();conv.buffer=makeIR(2.4,3,.35,0);
+  revSend=actx.createGain();revSend.connect(conv);conv.connect(master);
+  noiseBuf=actx.createBuffer(1,actx.sampleRate,actx.sampleRate);var nd=noiseBuf.getChannelData(0);for(var i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+  initLush();
+  buses=SY.map(function(tr,i){var g=actx.createGain();
+    if(i<2){g.connect(dry);var s=actx.createGain();s.gain.value=i===0?.3:.6;g.connect(s);s.connect(revSend)}
+    else lushIn(g,i);
+    return g});
   hatHP=actx.createBiquadFilter();hatHP.type="highpass";hatHP.frequency.value=7000;hatHP.connect(buses[0]);
-  applyWet();
+  applyWet();applyTempo();
 }
-function applyWet(){if(!actx)return;revSend.gain.setTargetAtTime(wet*.9,actx.currentTime,.05);dry.gain.setTargetAtTime(1-wet*.45,actx.currentTime,.05)}
+/* stereo reverb impulse: decorrelated noise with a pre-delay, an exponential tail that also darkens
+   over time (one-pole low-pass closing from bright to `dark`), so it blooms and settles instead of hissing */
+function makeIR(sec,curve,dark,pre){
+  var sr=actx.sampleRate,len=Math.floor(sr*sec),p0=Math.floor(sr*pre),ir=actx.createBuffer(2,len+p0,sr);
+  for(var c=0;c<2;c++){var d=ir.getChannelData(c),y=0;
+    for(var i=0;i<len;i++){var x=i/len,k=1-(1-dark)*Math.sqrt(x);y+=k*((Math.random()*2-1)-y);d[p0+i]=y*Math.pow(1-x,curve)*(i<sr*.004?i/(sr*.004):1)}}
+  return ir;
+}
+/* Chords and melody get their own space: chorus on the chords, a tempo-synced ping-pong delay that gets darker
+   on every repeat, a long dark hall fed by both, and a soft sidechain from the kick on all of it. */
+var fx={};
+function initLush(){
+  var t=actx.currentTime;
+  fx.duck=actx.createGain();fx.duck.connect(master);
+  fx.dry=actx.createGain();fx.dry.connect(fx.duck);
+  // hall: high-passed in, 5 s dark tail
+  fx.hallIn=actx.createBiquadFilter();fx.hallIn.type="highpass";fx.hallIn.frequency.value=320;
+  var hall=actx.createConvolver();hall.buffer=makeIR(5,2.2,.06,.035);
+  var hallOut=actx.createGain();hallOut.gain.value=.9;
+  fx.hallIn.connect(hall);hall.connect(hallOut);hallOut.connect(fx.duck);
+  // ping-pong: L -> R -> L, band-limited inside the loop
+  var mg=actx.createChannelMerger(2);
+  fx.dL=actx.createDelay(2);fx.dR=actx.createDelay(2);
+  fx.dIn=actx.createGain();
+  var lp=actx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=2600;
+  var hp=actx.createBiquadFilter();hp.type="highpass";hp.frequency.value=380;
+  fx.fb=actx.createGain();fx.fb.gain.value=.52;
+  fx.dIn.connect(fx.dL);fx.dL.connect(lp);lp.connect(hp);hp.connect(fx.dR);fx.dR.connect(fx.fb);fx.fb.connect(fx.dL);
+  fx.dL.connect(mg,0,0);fx.dR.connect(mg,0,1);
+  var dOut=actx.createGain();dOut.gain.value=.55;mg.connect(dOut);dOut.connect(fx.duck);
+  var d2h=actx.createGain();d2h.gain.value=.5;dOut.connect(d2h);d2h.connect(fx.hallIn);
+  // slow wobble on the delay times: tape-like pitch drift on the echoes
+  var wob=actx.createOscillator(),wg=actx.createGain();wob.frequency.value=.23;wg.gain.value=.0025;wob.connect(wg);wg.connect(fx.dL.delayTime);wg.connect(fx.dR.delayTime);wob.start(t);
+  // chorus for the chords: two modulated short delays, hard left / right
+  fx.chIn=actx.createGain();var cm=actx.createChannelMerger(2),chOut=actx.createGain();chOut.gain.value=.7;
+  [[.011,.31,0],[.017,.43,1]].forEach(function(v){
+    var d=actx.createDelay(.05),o=actx.createOscillator(),og=actx.createGain();
+    d.delayTime.value=v[0];o.frequency.value=v[1];og.gain.value=.0032;o.connect(og);og.connect(d.delayTime);o.start(t);
+    fx.chIn.connect(d);d.connect(cm,0,v[2]);
+  });
+  cm.connect(chOut);chOut.connect(fx.duck);var c2h=actx.createGain();c2h.gain.value=.4;chOut.connect(c2h);c2h.connect(fx.hallIn);
+  fx.send=[];
+}
+// per track: [dry, chorus, delay, hall]
+var LUSH={2:[.75,1,.22,.8],3:[.85,0,.5,.55]};
+function lushIn(g,i){
+  var L=LUSH[i],mk=function(v,dst){var s=actx.createGain();s.gain.value=v;g.connect(s);s.connect(dst);return s};
+  mk(L[0],fx.dry);if(L[1])mk(L[1],fx.chIn);
+  fx.send.push({base:L[2],g:mk(L[2],fx.dIn)},{base:L[3],g:mk(L[3],fx.hallIn)});
+}
+function applyWet(){
+  if(!actx)return;var t=actx.currentTime,k=.45+wet*2.2;
+  revSend.gain.setTargetAtTime(wet*.9,t,.05);dry.gain.setTargetAtTime(1-wet*.45,t,.05);
+  fx.send.forEach(function(s){s.g.gain.setTargetAtTime(s.base*k,t,.1)});
+}
+function applyTempo(){if(!actx)return;var t=actx.currentTime,s=60/bpm/4;
+  fx.dL.delayTime.setTargetAtTime(s*3,t,.15);fx.dR.delayTime.setTargetAtTime(s*3,t,.15)}
+/* sidechain: every kick dips chords, melody and their tails, then they breathe back */
+function pump(t){var g=fx.duck.gain;g.cancelScheduledValues(t);g.setTargetAtTime(.38,t,.006);g.setTargetAtTime(1,t+.045,.11)}
 
 /* tanh drive that keeps the voice's peak level, cached per drive amount and level */
 var curves={};
@@ -271,7 +333,7 @@ function kick(t,k,kit){
   var o=actx.createOscillator(),m=actx.createOscillator(),mg=actx.createGain(),a=actx.createGain();
   o.frequency.setValueAtTime(150*k*kit.k0,t);o.frequency.exponentialRampToValueAtTime(42*k*kit.k1,t+.12);
   m.frequency.value=225*k*kit.k0;mg.gain.setValueAtTime(400*fmAmt+1,t);mg.gain.exponentialRampToValueAtTime(1,t+.03);
-  m.connect(mg);mg.connect(o.frequency);o.connect(a);a.connect(buses[0]);
+  m.connect(mg);mg.connect(o.frequency);o.connect(a);a.connect(buses[0]);pump(t);
   a.gain.setValueAtTime(1,t);a.gain.exponentialRampToValueAtTime(.001,t+.45);
   o.start(t);m.start(t);o.stop(t+.5);m.stop(t+.5);
 }
@@ -358,7 +420,7 @@ function spice(){
 /* Dice: new values for the hidden sound and groove knobs, inside ranges that stay musical */
 var DIE="⚀⚁⚂⚃⚄⚅";
 function dice(){
-  fmAmt=rnd(.2,2.5);wet=rnd(.05,.8);bpm=Math.round(rnd(92,132));swing=rnd(.5,.66);applyWet();
+  fmAmt=rnd(.2,2.5);wet=rnd(.05,.8);bpm=Math.round(rnd(92,132));swing=rnd(.5,.66);applyWet();applyTempo();
   var f=Math.floor(Math.random()*6),el=document.querySelector("#dice .die");el.textContent=DIE.charAt(f);spinOnce(el,"roll");
   say("<b>Dice "+(f+1)+"</b> · FM "+Math.round(fmAmt*100)+"% · Wet "+Math.round(wet*100)+"% · Swing "+Math.round(swing*100)+"% · "+bpm+" bpm");
 }
