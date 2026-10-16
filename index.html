@@ -28,10 +28,6 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);f
 h1{font-weight:300;font-size:clamp(56px,14vw,128px);line-height:.92;letter-spacing:-.045em;margin:14px 0 0}
 h1 em{font-style:normal;display:inline-block;width:.32em;height:.32em;border-radius:50%;background:var(--accent);margin-left:.06em;vertical-align:baseline}
 .lead{font-size:18px;color:var(--soft);max-width:44ch;margin:22px 0 0;font-weight:300}
-.names{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:28px}
-.names button{all:unset;cursor:pointer;font-size:14px;color:var(--soft);border-bottom:1px solid transparent}
-.names button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
-.names button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 
 section{margin-top:88px}
 h2{font-weight:500;font-size:13px;margin:0 0 18px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
@@ -42,7 +38,7 @@ h2 .mono{font-weight:400}
 .cols,.pads{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .cols{margin-bottom:8px}
 .cols span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.pad,.pill,.names button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.pad,.pill{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .pad{all:unset;box-sizing:border-box;height:66px;min-width:0;padding:8px 9px;background:var(--idle);border:1.5px solid var(--idle);border-radius:6px;position:relative;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;transition:background .12s}
 .pad:hover{background:var(--wait)}
 .pad:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
@@ -77,22 +73,6 @@ h2 .mono{font-weight:400}
 .nojs{font-size:13px;background:var(--faint);border-radius:6px;padding:10px 12px;margin:14px 0 0}
 .nojs span{display:block;font-family:var(--mono);font-size:11px;color:var(--soft);margin-top:4px}
 
-/* skills matrix */
-.matrix{border-top:1px solid var(--ink)}
-.mrow{display:grid;grid-template-columns:minmax(0,1.6fr) 1fr 1fr 96px;gap:12px;align-items:baseline;padding-block:13px;border-bottom:1px solid var(--hair)}
-.mrow.head{padding-block:10px}
-.mrow .name{font-size:16px;min-width:0}
-.lvl{font-size:13px;color:var(--soft);min-width:0}
-.lvl b{font-weight:500;color:var(--ink)}
-.lvl.none{color:var(--hair)}
-.fmt{display:flex;gap:5px;justify-content:flex-end}
-.fmt i{width:9px;height:9px;border-radius:50%;border:1px solid var(--ink)}
-.fmt i.on{background:var(--ink)}
-.fmtkey{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
-.fmtkey span{display:flex;align-items:center;gap:6px}
-.fmtkey i{width:9px;height:9px;border-radius:50%;border:1px solid var(--ink);display:inline-block}
-.fmtkey i.on{background:var(--ink)}
-
 footer{margin-top:72px;padding-top:16px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
 @media (max-width:640px){
@@ -102,11 +82,6 @@ footer{margin-top:72px;padding-top:16px;border-top:1px solid var(--hair);display
   .pad .lbl{font-size:12px}
   .pad .rc{font-size:9px}
   .pill{padding:9px 15px}
-  .mrow{grid-template-columns:minmax(0,1fr) 72px;row-gap:2px}
-  .mrow .fmt{grid-column:2;grid-row:1}
-  .mrow .lvl{grid-column:1 / -1}
-  .mrow .lvl::before{content:attr(data-who) " · ";color:var(--soft)}
-  .mrow.head .lvl{display:none}
 }
 @media (prefers-reduced-motion:reduce){.pad.q,.pad.flash,.pill .die.roll,.pill .g.spin{animation:none}}
 </style>
@@ -116,7 +91,6 @@ footer{margin-top:72px;padding-top:16px;border-top:1px solid var(--hair);display
   <div class="mono">Школа Ableton · Заур и Илья</div>
   <h1><span class="pname">Diffusion</span><em aria-hidden="true"></em></h1>
   <p class="lead">Учим делать музыку в Ableton: от первого бита до сведения. Видеокурсы, занятия вживую и онлайн.</p>
-  <div class="names" role="group" aria-label="Выбрать название"><button type="button" aria-pressed="true">Diffusion</button><button type="button" aria-pressed="false">Dry/Wet</button><button type="button" aria-pressed="false">Headroom</button><button type="button" aria-pressed="false">Sidechain</button><button type="button" aria-pressed="false">Warp</button><button type="button" aria-pressed="false">Quantize</button></div>
 
   <section aria-label="Звуковой модуль">
     <h2>Звуковой модуль <span class="mono">FM · ля минор</span></h2>
@@ -133,45 +107,12 @@ footer{margin-top:72px;padding-top:16px;border-top:1px solid var(--hair);display
     </div>
   </section>
 
-  <section>
-    <h2>Скилы <span class="mono">10 направлений</span></h2>
-    <div class="matrix" id="matrix">
-      <div class="mrow head mono"><span>Направление</span><span class="lvl">Заур</span><span class="lvl">Илья</span><span style="text-align:right">Формат</span></div>
-      <div class="mrow"><span class="name">Введение в Аблетон</span><span class="lvl" data-who="Заур"><b>Продвинутый</b></span><span class="lvl" data-who="Илья"><b>База</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
-      <div class="mrow"><span class="name">Бит для школьника</span><span class="lvl" data-who="Заур"><b>Продвинутый</b></span><span class="lvl" data-who="Илья"><b>База</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
-      <div class="mrow"><span class="name">Сведение</span><span class="lvl" data-who="Заур"><b>Продвинутый</b></span><span class="lvl" data-who="Илья"><b>База</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
-      <div class="mrow"><span class="name">Аранжировка</span><span class="lvl" data-who="Заур"><b>Продвинутый</b></span><span class="lvl" data-who="Илья"><b>База</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
-      <div class="mrow"><span class="name">Саунддизайн</span><span class="lvl" data-who="Заур"><b>Генеративный подход</b></span><span class="lvl" data-who="Илья"><b>Волновой синтез</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
-      <div class="mrow"><span class="name">Нейросети</span><span class="lvl" data-who="Заур"><b>Suno</b></span><span class="lvl none" data-who="Илья">—</span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
-      <div class="mrow"><span class="name">Фортепиано</span><span class="lvl none" data-who="Заур">—</span><span class="lvl" data-who="Илья"><b>Да</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн нет"><i class="on"></i><i class="on"></i><i class=""></i></span></div>
-      <div class="mrow"><span class="name">Гитара</span><span class="lvl none" data-who="Заур">—</span><span class="lvl" data-who="Илья"><b>Да</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн нет"><i class="on"></i><i class="on"></i><i class=""></i></span></div>
-      <div class="mrow"><span class="name">Теория музыки</span><span class="lvl none" data-who="Заур">—</span><span class="lvl" data-who="Илья"><b>Да</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
-      <div class="mrow"><span class="name">Установка плагинов</span><span class="lvl none" data-who="Заур">—</span><span class="lvl" data-who="Илья"><b>Да</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
-    </div>
-    <div class="fmtkey mono"><span>Видеокурс · Вживую · Онлайн</span><span><i class="on"></i>есть</span><span><i></i>нет</span></div>
-  </section>
-
   <footer class="mono"><span class="pname">Diffusion</span><span>Школа Ableton</span></footer>
 </div>
 
 <script>
 function showErr(e){try{var n=document.getElementById("nojs");n.hidden=false;document.getElementById("errOut").textContent="Ошибка: "+((e&&e.message)||e)}catch(_){}}
 window.addEventListener("error",function(ev){showErr(ev.error||ev.message)});
-</script>
-<script>
-/* ===== page ===== */
-var store={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-
-var namesEl=document.querySelector(".names"),NAMES=[].map.call(namesEl.querySelectorAll("button"),function(b){return b.textContent});
-var name=store.get("name",NAMES[0]);if(NAMES.indexOf(name)<0)name=NAMES[0];
-namesEl.querySelectorAll("button").forEach(function(b){b.onclick=function(){name=b.textContent;store.set("name",name);setName()}});
-function setName(){
-  document.querySelectorAll(".pname").forEach(function(e){e.textContent=name});
-  namesEl.querySelectorAll("button").forEach(function(b){b.setAttribute("aria-pressed",b.textContent===name)});
-  document.title=name+" — школа Ableton";
-}
-setName();
-
 </script>
 <script>
 /* ===== FM clip module: 4 tracks x 2 clips ===== */
