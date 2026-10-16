@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<title>Diffusion — школа Ableton</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* One light sheet, one narrow column, hairlines instead of boxes. Clip module borrows Diffusion FM6:
+   lemon clips, ink frame while playing, "›" while waiting for the bar, "×" while waiting to stop. */
+:root{
+  --paper:#f7f7f5; --ink:#121212; --soft:#6f6f6b; --hair:#dcdcd7; --faint:#eaeae6;
+  --accent:#f2c230; --lemon:#f8e854; --idle:#fcf7d2; --wait:#fbf4b8;
+  --sans:"Onest",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+.wrap{max-width:860px;margin:0 auto;padding:max(28px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(80px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft)}
+
+h1{font-weight:300;font-size:clamp(56px,14vw,128px);line-height:.92;letter-spacing:-.045em;margin:14px 0 0}
+h1 em{font-style:normal;display:inline-block;width:.32em;height:.32em;border-radius:50%;background:var(--accent);margin-left:.06em;vertical-align:baseline}
+.lead{font-size:18px;color:var(--soft);max-width:44ch;margin:22px 0 0;font-weight:300}
+.names{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:28px}
+.names button{all:unset;cursor:pointer;font-size:14px;color:var(--soft);border-bottom:1px solid transparent}
+.names button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.names button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+
+section{margin-top:88px}
+h2{font-weight:500;font-size:13px;margin:0 0 18px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+h2 .mono{font-weight:400}
+
+/* clip module */
+.synth{max-width:560px}
+.cols,.pads{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.cols{margin-bottom:8px}
+.cols span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.pad,.pill,.names button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.pad{all:unset;box-sizing:border-box;height:66px;min-width:0;padding:8px 9px;background:var(--idle);border:1.5px solid var(--idle);border-radius:6px;position:relative;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;transition:background .12s}
+.pad:hover{background:var(--wait)}
+.pad:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.pad .lbl{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pad .rc{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pad .bar{position:absolute;left:0;bottom:0;height:3px;width:calc(var(--p,0) * 100%);background:var(--ink);opacity:0}
+.pad.on{background:var(--lemon);border-color:var(--ink)}
+.pad.on .rc{color:var(--ink)}
+.pad.on .bar{opacity:.5}
+.pad.q{background:var(--wait);animation:blink .5s steps(2,jump-none) infinite}
+.pad.on.q{background:var(--lemon)}
+@keyframes blink{0%{border-color:var(--ink)}100%{border-color:var(--wait)}}
+.pad.flash{animation:flash .5s ease-out}
+@keyframes flash{0%{background:var(--lemon)}100%{}}
+
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.pill{all:unset;box-sizing:border-box;cursor:pointer;font-size:14px;font-weight:500;border:1px solid var(--ink);border-radius:999px;padding:9px 18px;display:flex;align-items:center;gap:9px;transition:transform .08s}
+.pill:hover{background:var(--ink);color:var(--paper)}
+.pill:active{transform:scale(.96)}
+.pill:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.pill .g{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--lemon);border:1px solid var(--ink)}
+.pill.regen .g.spin{animation:spin .5s ease-out}
+@keyframes spin{to{transform:rotate(1turn) scale(.4)}}
+.pill .die{font-size:18px;line-height:10px;display:inline-block}
+.pill .die.roll{animation:roll .45s ease-out}
+@keyframes roll{0%{transform:rotate(0)}100%{transform:rotate(2turn)}}
+.pill .chili{width:10px;height:10px;border-radius:50% 50% 50% 0;background:#e8492f;border:1px solid var(--ink);transform:rotate(-45deg)}
+.pill:hover .g,.pill:hover .chili{border-color:var(--paper)}
+.info{margin-top:14px;min-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info b{font-weight:500;color:var(--ink)}
+.hint{font-size:13px;color:var(--soft);margin:6px 0 0}
+.nojs{font-size:13px;background:var(--faint);border-radius:6px;padding:10px 12px;margin:14px 0 0}
+.nojs span{display:block;font-family:var(--mono);font-size:11px;color:var(--soft);margin-top:4px}
+
+/* skills matrix */
+.matrix{border-top:1px solid var(--ink)}
+.mrow{display:grid;grid-template-columns:minmax(0,1.6fr) 1fr 1fr 96px;gap:12px;align-items:baseline;padding-block:13px;border-bottom:1px solid var(--hair)}
+.mrow.head{padding-block:10px}
+.mrow .name{font-size:16px;min-width:0}
+.lvl{font-size:13px;color:var(--soft);min-width:0}
+.lvl b{font-weight:500;color:var(--ink)}
+.lvl.none{color:var(--hair)}
+.fmt{display:flex;gap:5px;justify-content:flex-end}
+.fmt i{width:9px;height:9px;border-radius:50%;border:1px solid var(--ink)}
+.fmt i.on{background:var(--ink)}
+.fmtkey{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
+.fmtkey span{display:flex;align-items:center;gap:6px}
+.fmtkey i{width:9px;height:9px;border-radius:50%;border:1px solid var(--ink);display:inline-block}
+.fmtkey i.on{background:var(--ink)}
+
+footer{margin-top:72px;padding-top:16px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media (max-width:640px){
+  .wrap{padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(60px,env(safe-area-inset-bottom))}
+  section{margin-top:64px}
+  .pad{height:60px;padding:7px 7px}
+  .pad .lbl{font-size:12px}
+  .pad .rc{font-size:9px}
+  .pill{padding:9px 15px}
+  .mrow{grid-template-columns:minmax(0,1fr) 72px;row-gap:2px}
+  .mrow .fmt{grid-column:2;grid-row:1}
+  .mrow .lvl{grid-column:1 / -1}
+  .mrow .lvl::before{content:attr(data-who) " · ";color:var(--soft)}
+  .mrow.head .lvl{display:none}
+}
+@media (prefers-reduced-motion:reduce){.pad.q,.pad.flash,.pill .die.roll,.pill .g.spin{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mono">Школа Ableton · Заур и Илья</div>
+  <h1><span class="pname">Diffusion</span><em aria-hidden="true"></em></h1>
+  <p class="lead">Учим делать музыку в Ableton: от первого бита до сведения. Видеокурсы, занятия вживую и онлайн.</p>
+  <div class="names" role="group" aria-label="Выбрать название"><button type="button" aria-pressed="true">Diffusion</button><button type="button" aria-pressed="false">Dry/Wet</button><button type="button" aria-pressed="false">Headroom</button><button type="button" aria-pressed="false">Sidechain</button><button type="button" aria-pressed="false">Warp</button><button type="button" aria-pressed="false">Quantize</button></div>
+
+  <section aria-label="Звуковой модуль">
+    <h2>Звуковой модуль <span class="mono">FM · ля минор</span></h2>
+    <div class="synth">
+      <div class="cols mono"><span>Барабаны</span><span>Бас</span><span>Аккорды</span><span>Мелодия</span></div>
+      <div class="pads" id="pads"><button type="button" class="pad" data-tr="0" data-ci="0" aria-label="Барабаны: Four"><span class="lbl">Four</span><span class="rc">Classic</span><i class="bar"></i></button><button type="button" class="pad" data-tr="1" data-ci="0" aria-label="Бас: Pulse"><span class="lbl">Pulse</span><span class="rc">FM</span><i class="bar"></i></button><button type="button" class="pad" data-tr="2" data-ci="0" aria-label="Аккорды: Pad"><span class="lbl">Pad</span><span class="rc">FM</span><i class="bar"></i></button><button type="button" class="pad" data-tr="3" data-ci="0" aria-label="Мелодия: Hook"><span class="lbl">Hook</span><span class="rc">FM</span><i class="bar"></i></button><button type="button" class="pad" data-tr="0" data-ci="1" aria-label="Барабаны: Boom bap"><span class="lbl">Boom bap</span><span class="rc">Classic</span><i class="bar"></i></button><button type="button" class="pad" data-tr="1" data-ci="1" aria-label="Бас: Syncop"><span class="lbl">Syncop</span><span class="rc">FM</span><i class="bar"></i></button><button type="button" class="pad" data-tr="2" data-ci="1" aria-label="Аккорды: Stabs"><span class="lbl">Stabs</span><span class="rc">FM</span><i class="bar"></i></button><button type="button" class="pad" data-tr="3" data-ci="1" aria-label="Мелодия: Arp"><span class="lbl">Arp</span><span class="rc">FM</span><i class="bar"></i></button></div>
+      <div class="btns">
+        <button type="button" class="pill regen" id="regen" title="Новые клипы (R)"><span class="g"></span>Regen</button>
+        <button type="button" class="pill" id="dice" title="Новые значения звука и грува (D)"><span class="die" aria-hidden="true">⚄</span>Dice</button>
+        <button type="button" class="pill" id="spice" title="Новый тембр каждого клипа (S)"><span class="chili" aria-hidden="true"></span>Spice</button>
+      </div>
+      <div class="info mono" id="info" aria-live="polite">Тап по клипу — старт с начала такта</div>
+      <p class="nojs" id="nojs">Это превью файла — здесь звук не играет. Открой страницу по ссылке или в браузере.<span id="errOut"></span></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Скилы <span class="mono">10 направлений</span></h2>
+    <div class="matrix" id="matrix">
+      <div class="mrow head mono"><span>Направление</span><span class="lvl">Заур</span><span class="lvl">Илья</span><span style="text-align:right">Формат</span></div>
+      <div class="mrow"><span class="name">Введение в Аблетон</span><span class="lvl" data-who="Заур"><b>Продвинутый</b></span><span class="lvl" data-who="Илья"><b>База</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+      <div class="mrow"><span class="name">Бит для школьника</span><span class="lvl" data-who="Заур"><b>Продвинутый</b></span><span class="lvl" data-who="Илья"><b>База</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+      <div class="mrow"><span class="name">Сведение</span><span class="lvl" data-who="Заур"><b>Продвинутый</b></span><span class="lvl" data-who="Илья"><b>База</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+      <div class="mrow"><span class="name">Аранжировка</span><span class="lvl" data-who="Заур"><b>Продвинутый</b></span><span class="lvl" data-who="Илья"><b>База</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+      <div class="mrow"><span class="name">Саунддизайн</span><span class="lvl" data-who="Заур"><b>Генеративный подход</b></span><span class="lvl" data-who="Илья"><b>Волновой синтез</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+      <div class="mrow"><span class="name">Нейросети</span><span class="lvl" data-who="Заур"><b>Suno</b></span><span class="lvl none" data-who="Илья">—</span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+      <div class="mrow"><span class="name">Фортепиано</span><span class="lvl none" data-who="Заур">—</span><span class="lvl" data-who="Илья"><b>Да</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн нет"><i class="on"></i><i class="on"></i><i class=""></i></span></div>
+      <div class="mrow"><span class="name">Гитара</span><span class="lvl none" data-who="Заур">—</span><span class="lvl" data-who="Илья"><b>Да</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн нет"><i class="on"></i><i class="on"></i><i class=""></i></span></div>
+      <div class="mrow"><span class="name">Теория музыки</span><span class="lvl none" data-who="Заур">—</span><span class="lvl" data-who="Илья"><b>Да</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+      <div class="mrow"><span class="name">Установка плагинов</span><span class="lvl none" data-who="Заур">—</span><span class="lvl" data-who="Илья"><b>Да</b></span><span class="fmt" aria-label="Видео да, вживую да, онлайн да"><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+    </div>
+    <div class="fmtkey mono"><span>Видеокурс · Вживую · Онлайн</span><span><i class="on"></i>есть</span><span><i></i>нет</span></div>
+  </section>
+
+  <footer class="mono"><span class="pname">Diffusion</span><span>Школа Ableton</span></footer>
+</div>
+
+<script>
+function showErr(e){try{var n=document.getElementById("nojs");n.hidden=false;document.getElementById("errOut").textContent="Ошибка: "+((e&&e.message)||e)}catch(_){}}
+window.addEventListener("error",function(ev){showErr(ev.error||ev.message)});
+</script>
+<script>
+/* ===== page ===== */
+var store={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+var namesEl=document.querySelector(".names"),NAMES=[].map.call(namesEl.querySelectorAll("button"),function(b){return b.textContent});
+var name=store.get("name",NAMES[0]);if(NAMES.indexOf(name)<0)name=NAMES[0];
+namesEl.querySelectorAll("button").forEach(function(b){b.onclick=function(){name=b.textContent;store.set("name",name);setName()}});
+function setName(){
+  document.querySelectorAll(".pname").forEach(function(e){e.textContent=name});
+  namesEl.querySelectorAll("button").forEach(function(b){b.setAttribute("aria-pressed",b.textContent===name)});
+  document.title=name+" — школа Ableton";
+}
+setName();
+
+</script>
+<script>
+/* ===== FM clip module: 4 tracks x 2 clips ===== */
+var TR=["Барабаны","Бас","Аккорды","Мелодия"];
+/* drum kits (Spice on drums): kick sweep start / end, snare tuning in semitones, hat brightness */
+var KIT0={n:"Classic",k0:1,k1:1,sn:0,hc:1};
+var KITS=[KIT0,{n:"808",k0:.6,k1:.85,sn:-3,hc:.75},{n:"Punch",k0:1.5,k1:1.15,sn:2,hc:1.25},
+  {n:"Tight",k0:1.25,k1:1.6,sn:5,hc:1.6},{n:"Dusty",k0:.85,k1:.9,sn:-5,hc:.4},{n:"Metal",k0:1.1,k1:1.3,sn:7,hc:1.9}];
+/* synthesis recipes (Spice on notes), as in Diffusion FM6: ie = how much the FM index follows the envelope
+   (1 pluck .. 0 static), dr = drive into tanh, dt = level of a second carrier +12 cents, cf = low-pass cutoff
+   as a multiple of the note frequency, rs = its resonance */
+var RECIPES=[
+ {n:"Glass",ratios:[3.5,7],index:[2,3.5],ie:1,dr:.01,dt:0,cf:400,rs:0},
+ {n:"Bell",ratios:[1.41,2.76],index:[2.5,4],ie:1,dr:.01,dt:.25,cf:400,rs:0},
+ {n:"Wide",ratios:[1],index:[.4,.9],ie:.3,dr:1.2,dt:1,cf:6,rs:.2},
+ {n:"Dirt",ratios:[2,3],index:[1.5,2.5],ie:.5,dr:5,dt:0,cf:8,rs:.4},
+ {n:"Pluck",ratios:[1],index:[3,5],ie:1,dr:1.5,dt:0,cf:3,rs:.7},
+ {n:"Velvet",ratios:[.5,1],index:[.6,1.2],ie:0,dr:.01,dt:.6,cf:2,rs:.1},
+ {n:"Square",ratios:[2],index:[1.2,2],ie:.2,dr:4,dt:.3,cf:10,rs:0},
+ {n:"Acid",ratios:[1],index:[1,2],ie:.1,dr:3,dt:0,cf:1.5,rs:.9}
+];
+var SY=[
+ {kind:"drums",clips:[
+  {n:"Four",k:"x...x...x...x...",s:"....x.......x...",h:"..x...x...x...x."},
+  {n:"Boom bap",k:"x......x..x.....",s:"....x.......x...",h:"x.x.x.x.x.x.x.x."}]},
+ {kind:"bass",clips:[
+  {n:"Pulse",notes:[0,2,4,6,8,10,12,14].map(function(s){return [s,33,1.5]}).concat([16,18,20,22,24,26,28,30].map(function(s){return [s,29,1.5]}))},
+  {n:"Syncop",notes:[[0,33,3],[3,45,1],[6,33,2],[10,36,2],[16,29,3],[19,41,1],[22,29,2],[26,31,2]]}]},
+ {kind:"keys",clips:[
+  {n:"Pad",notes:[[0,[57,60,64],15],[16,[53,57,60],15]]},
+  {n:"Stabs",notes:[2,6,10,14].map(function(s){return [s,[57,60,64,67],1.5]}).concat([18,22,26,30].map(function(s){return [s,[53,57,60,64],1.5]}))}]},
+ {kind:"lead",clips:[
+  {n:"Hook",notes:[[0,76,2],[2,74,2],[4,72,4],[10,69,2],[12,72,2],[16,79,3],[19,76,3],[22,74,2],[28,72,4]]},
+  {n:"Arp",notes:[69,72,76,79,69,72,76,79,65,69,72,76,65,69,72,76].map(function(m,i){return [i*2,m+12,1.5]})}]}
+];
+var NT=SY.length,NC=2,LOOP=32;
+var DEF={bass:{ratio:1,index:2.2,ie:.8},keys:{ratio:1,index:1.6,ie:.85},lead:{ratio:3.5,index:2.4,ie:.88}};
+
+var actx=null,master,revSend,dry,buses=[],noiseBuf,hatHP;
+var pick=function(a){return a[Math.floor(Math.random()*a.length)]},rnd=function(a,b){return a+Math.random()*(b-a)};
+var PENT=[57,60,62,64,67,69,72,74,76,79,81,84,86,88];
+var bpm=112,fmAmt=1,wet=.25,swing=.5;
+var running=false,gstep=0,nextT=0;
+var playing=[null,null,null,null],queued=[undefined,undefined,undefined,undefined],startStep=[0,0,0,0];
+var vis={on:[null,null,null,null],ls:[0,0,0,0],ll:[1,1,1,1]},evq=[];
+var mtof=function(m){return 440*Math.pow(2,(m-69)/12)};
+
+function initAudio(){
+  var AC=window.AudioContext||window.webkitAudioContext;
+  actx=new AC();
+  var comp=actx.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;comp.connect(actx.destination);
+  master=actx.createGain();master.gain.value=.8;master.connect(comp);
+  dry=actx.createGain();dry.connect(master);
+  var conv=actx.createConvolver(),len=Math.floor(actx.sampleRate*2.4),ir=actx.createBuffer(2,len,actx.sampleRate);
+  for(var c=0;c<2;c++){var d=ir.getChannelData(c);for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
+  conv.buffer=ir;revSend=actx.createGain();revSend.connect(conv);conv.connect(master);
+  noiseBuf=actx.createBuffer(1,actx.sampleRate,actx.sampleRate);var nd=noiseBuf.getChannelData(0);for(i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+  buses=SY.map(function(tr,i){var g=actx.createGain();g.connect(dry);var s=actx.createGain();s.gain.value=i===0?.3:1;g.connect(s);s.connect(revSend);return g});
+  hatHP=actx.createBiquadFilter();hatHP.type="highpass";hatHP.frequency.value=7000;hatHP.connect(buses[0]);
+  applyWet();
+}
+function applyWet(){if(!actx)return;revSend.gain.setTargetAtTime(wet*.9,actx.currentTime,.05);dry.gain.setTargetAtTime(1-wet*.45,actx.currentTime,.05)}
+
+/* tanh drive that keeps the voice's peak level, cached per drive amount and level */
+var curves={};
+function driveCurve(dr,g){
+  var key=dr.toFixed(1)+"|"+g;if(curves[key])return curves[key];
+  var n=1024,c=new Float32Array(n),D=dr*8,norm=g/Math.tanh(D*g);
+  for(var i=0;i<n;i++){var x=i/(n-1)*2-1;c[i]=Math.tanh(D*x)*norm}
+  return curves[key]=c;
+}
+function fm(t,f,o){
+  var c=actx.createOscillator(),m=actx.createOscillator(),mg=actx.createGain(),a=actx.createGain(),rc=o.rc,out=o.out,c2=null;
+  c.frequency.value=f;m.frequency.value=f*o.ratio;
+  var I=Math.max(o.index*fmAmt*f*o.ratio,.01);
+  mg.gain.setValueAtTime(I,t);mg.gain.exponentialRampToValueAtTime(Math.max(I*o.ie,.01),t+o.id);
+  m.connect(mg);mg.connect(c.frequency);c.connect(a);
+  if(rc){
+    if(rc.cf<100){var lp=actx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=Math.min(16000,Math.max(60,f*rc.cf));lp.Q.value=.7+rc.rs*14;lp.connect(out);out=lp}
+    if(rc.dr>.05){var ws=actx.createWaveShaper();ws.curve=driveCurve(rc.dr,o.g);ws.connect(out);out=ws}
+    if(rc.dt>0){c2=actx.createOscillator();var g2=actx.createGain();c2.frequency.value=f*Math.pow(2,12/1200);g2.gain.value=rc.dt;mg.connect(c2.frequency);c2.connect(g2);g2.connect(a)}
+  }
+  a.connect(out);
+  var g=rc&&rc.dt>0?o.g/(1+rc.dt*.6):o.g;
+  a.gain.setValueAtTime(0,t);a.gain.linearRampToValueAtTime(g,t+o.a);
+  a.gain.setTargetAtTime(g*o.s,t+o.a,o.d);
+  var rel=Math.max(t+o.a+.005,t+o.dur);a.gain.setTargetAtTime(0,rel,o.r);
+  var end=rel+o.r*7;c.start(t);m.start(t);c.stop(end);m.stop(end);if(c2){c2.start(t);c2.stop(end)}
+}
+function noise(t,dur,g,type,freq,out){
+  var s=actx.createBufferSource(),f=actx.createBiquadFilter(),a=actx.createGain();
+  s.buffer=noiseBuf;f.type=type;f.frequency.value=freq;
+  a.gain.setValueAtTime(g,t);a.gain.exponentialRampToValueAtTime(.001,t+dur);
+  s.connect(f);f.connect(a);a.connect(out);s.start(t);s.stop(t+dur+.02);
+}
+function kick(t,k,kit){
+  var o=actx.createOscillator(),m=actx.createOscillator(),mg=actx.createGain(),a=actx.createGain();
+  o.frequency.setValueAtTime(150*k*kit.k0,t);o.frequency.exponentialRampToValueAtTime(42*k*kit.k1,t+.12);
+  m.frequency.value=225*k*kit.k0;mg.gain.setValueAtTime(400*fmAmt+1,t);mg.gain.exponentialRampToValueAtTime(1,t+.03);
+  m.connect(mg);mg.connect(o.frequency);o.connect(a);a.connect(buses[0]);
+  a.gain.setValueAtTime(1,t);a.gain.exponentialRampToValueAtTime(.001,t+.45);
+  o.start(t);m.start(t);o.stop(t+.5);m.stop(t+.5);
+}
+function snare(t,k,kit){
+  var sk=k*Math.pow(2,kit.sn/12);
+  noise(t,.18,.45,"bandpass",1800*sk,buses[0]);
+  fm(t,190*sk,{ratio:2.3,index:3,ie:.1,id:.08,a:.001,d:.04,s:.001,dur:.06,r:.03,g:.35,out:buses[0]});
+}
+function hat(t,acc,k,kit){
+  fm(t,620*k*kit.hc,{ratio:7.13,index:4,ie:.3,id:.05,a:.001,d:.02,s:.001,dur:.03,r:.015,g:acc?.22:.12,out:hatHP});
+  noise(t,.04,acc?.12:.06,"highpass",Math.min(8000*k*kit.hc,16000),buses[0]);
+}
+function playStep(tr,ci,pos,t,sd){
+  var T=SY[tr],c=T.clips[ci];
+  if(T.kind==="drums"){var q=pos%16,kit=c.kit||KIT0;
+    if(c.k[q]==="x")kick(t,1,kit);if(c.s[q]==="x")snare(t,1,kit);if(c.h[q]==="x")hat(t,q%4===2,1,kit);return}
+  var tm=c.tim||{},rc=c.rc,df=DEF[T.kind],ratio=rc?rc.ratio:(tm.ratio||df.ratio),index=rc?rc.index:(tm.index||df.index),ie=Math.max(.02,1-(rc?rc.ie:df.ie));
+  c.notes.forEach(function(n){if(n[0]!==pos)return;var dur=n[2]*sd;
+    if(T.kind==="bass")fm(t,mtof(n[1]),{ratio:ratio,index:index,ie:ie,id:.25,a:.005,d:.3,s:.6,dur:dur*.92,r:.04,g:.32,out:buses[1],rc:rc});
+    else if(T.kind==="keys")n[1].forEach(function(m){fm(t,mtof(m),{ratio:ratio,index:index,ie:ie,id:.7,a:.012,d:.9,s:.4,dur:dur,r:.25,g:.065,out:buses[2],rc:rc})});
+    else fm(t,mtof(n[1]),{ratio:ratio,index:index,ie:ie,id:.8,a:.004,d:.5,s:.3,dur:dur,r:.3,g:.085,out:buses[3],rc:rc});
+  });
+}
+
+/* Regen: new patterns, notes and names, always in A minor */
+var WORDS=["Haze","Glint","Moss","Static","Ember","Drift","Orbit","Silk","Grit","Dew","Neon","Vapor","Rust","Bloom","Tide","Flux","Ash","Echo","Velvet","Smoke","Prism","Chrome","Fog","Spark","Lull","Shard","Cinder","Ripple","Hush","Lumen"];
+var CH={Am:[57,60,64],C:[60,64,67],Dm:[50,53,57],Em:[52,55,59],F:[53,57,60],G:[55,59,62]},ROOT={Am:33,C:36,Dm:38,Em:40,F:29,G:31};
+var PROG=[["Am","F"],["Am","G"],["Am","C"],["Dm","Em"],["F","G"],["Am","Em"],["Dm","Am"],["C","G"]];
+function genDrums(){
+  var k="",s="",h="",hm=pick([2,1,4,"r"]);
+  for(var i=0;i<16;i++){
+    k+=(i===0||(i%4===0&&Math.random()<.55)||Math.random()<.12)?"x":".";
+    s+=(((i===4||i===12)&&Math.random()<.85)||(i===8&&Math.random()<.25)||Math.random()<.06)?"x":".";
+    h+=hm==="r"?(Math.random()<.55?"x":"."):(i%hm===(hm===4?2:0)?"x":".");
+  }
+  return {k:k,s:s,h:h};
+}
+function genBass(pr){
+  var notes=[];[0,16].forEach(function(o,h){var r=ROOT[pr[h]];
+    for(var i=0;i<16;i++)if(i===0||Math.random()<.32){var len=Math.random()<.3?pick([3,4,6]):pick([1,1.5,2]);notes.push([o+i,r+pick([0,0,0,12,7]),len]);i+=Math.floor(len)-1}});
+  return notes;
+}
+function genKeys(pr){
+  var st=pick(["pad","stab","off","pulse"]),notes=[];
+  [0,16].forEach(function(o,h){var nm=pr[h],c=CH[nm].slice();if(Math.random()<.5)c.push(c[0]+(nm==="C"||nm==="F"?11:10));
+    if(st==="pad")notes.push([o,c,15]);
+    else if(st==="stab")[0,3,6,10].forEach(function(i){if(Math.random()<.8)notes.push([o+i,c,1])});
+    else if(st==="off")[2,6,10,14].forEach(function(i){notes.push([o+i,c,1.5])});
+    else [0,4,8,12].forEach(function(i){notes.push([o+i,c,2.5])})});
+  return notes;
+}
+function genLead(){
+  var sc=PENT.slice(5),notes=[],j=Math.floor(Math.random()*5),dn=rnd(.2,.5);
+  for(var i=0;i<32;i++)if(Math.random()<dn||i===0){j=Math.max(0,Math.min(sc.length-1,j+pick([-2,-1,-1,0,1,1,2])));var len=pick([1,1,2,2,3,4]);notes.push([i,sc[j],len]);i+=len-1}
+  return notes;
+}
+function regen(){
+  var used={},nm=function(){var w;do{w=pick(WORDS)}while(used[w]);used[w]=1;return w};
+  for(var ci=0;ci<NC;ci++){
+    var pr=pick(PROG),d=genDrums();d.n=nm();
+    SY[0].clips[ci]=d;
+    SY[1].clips[ci]={n:nm(),notes:genBass(pr),tim:{ratio:pick([1,1,.5,2,3]),index:rnd(.8,4)}};
+    SY[2].clips[ci]={n:nm(),notes:genKeys(pr),tim:{ratio:pick([1,2,3,.5,14]),index:rnd(.5,2.6)}};
+    SY[3].clips[ci]={n:nm(),notes:genLead(),tim:{ratio:pick([1,2,3.5,1.41,5]),index:rnd(.8,4)}};
+  }
+  paintLabels(true);
+  say("<b>Regen</b> · "+NT*NC+" новых клипов · "+pr.join(" → "));
+  spinOnce(document.querySelector("#regen .g"),"spin");
+}
+/* Spice: like Regen, but for the sound - every clip gets a new recipe (or kit), the notes stay */
+function newRecipe(old){
+  var r;do{r=pick(RECIPES)}while(old&&r.n===old.n);
+  return {n:r.n,ratio:pick(r.ratios),index:rnd(r.index[0],r.index[1]),ie:r.ie,dr:r.dr,dt:r.dt,cf:r.cf,rs:r.rs};
+}
+function spice(){
+  for(var ci=0;ci<NC;ci++){
+    var c=SY[0].clips[ci],k;do{k=pick(KITS)}while(k===(c.kit||KIT0));c.kit=k;
+    for(var tr=1;tr<NT;tr++)SY[tr].clips[ci].rc=newRecipe(SY[tr].clips[ci].rc);
+  }
+  paintLabels(true);
+  var hot=[0,1,2,3].map(function(tr){var c=SY[tr].clips[playing[tr]!==null?playing[tr]:0];return tr?c.rc.n:c.kit.n});
+  say("<b>Spice</b> · "+hot.join(" · "));
+}
+/* Dice: new values for the hidden sound and groove knobs, inside ranges that stay musical */
+var DIE="⚀⚁⚂⚃⚄⚅";
+function dice(){
+  fmAmt=rnd(.2,2.5);wet=rnd(.05,.8);bpm=Math.round(rnd(92,132));swing=rnd(.5,.66);applyWet();
+  var f=Math.floor(Math.random()*6),el=document.querySelector("#dice .die");el.textContent=DIE.charAt(f);spinOnce(el,"roll");
+  say("<b>Dice "+(f+1)+"</b> · FM "+Math.round(fmAmt*100)+"% · Wet "+Math.round(wet*100)+"% · Swing "+Math.round(swing*100)+"% · "+bpm+" bpm");
+}
+function spinOnce(el,cls){el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls)}
+var infoEl=document.getElementById("info");
+function say(html){infoEl.innerHTML=html}
+
+function doStep(s,t,sd){
+  if(s%16===0){
+    for(var tr=0;tr<NT;tr++)if(queued[tr]!==undefined){playing[tr]=queued[tr]===-1?null:queued[tr];startStep[tr]=s;queued[tr]=undefined;evq.push({t:t,tr:tr,clip:playing[tr],len:LOOP*sd})}
+    if(playing.every(function(p){return p===null})){running=false;silent(false);return}
+  }
+  var ts=t+(s%2===1?(2*swing-1)*sd:0); // MPC-style swing on the odd 16ths
+  for(tr=0;tr<NT;tr++){if(playing[tr]===null)continue;var pos=(s-startStep[tr])%LOOP;
+    if(pos===0)evq.push({t:t,tr:tr,clip:playing[tr],len:LOOP*sd});playStep(tr,playing[tr],pos,ts,sd)}
+}
+function tick(){
+  if(!running)return;
+  try{while(nextT<actx.currentTime+.12){var sd=60/bpm/4;doStep(gstep,nextT,sd);nextT+=sd;gstep++;if(!running)break}}
+  catch(e){showErr(e)}
+  if(running)setTimeout(tick,25);
+}
+
+/* Audio unlock. In-app browsers (Telegram on iOS is a WKWebView) only start audio from touchend / click,
+   not pointerdown, and mute Web Audio with the silent switch. So: create the context on the first gesture,
+   resume it on every gesture, and on iOS play a looping silent <audio> that moves the session to playback. */
+var IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+var silentEl=null;
+function silentWav(){
+  var sr=8000,n=sr/2,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=function(o,s){for(var i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  return URL.createObjectURL(new Blob([b],{type:"audio/wav"}));
+}
+function silent(on){
+  if(!IOS)return;
+  try{
+    if(!silentEl){silentEl=document.createElement("audio");silentEl.src=silentWav();silentEl.loop=true;silentEl.preload="auto";
+      silentEl.setAttribute("playsinline","");silentEl.setAttribute("webkit-playsinline","");silentEl.setAttribute("x-webkit-airplay","deny")}
+    if(on&&silentEl.paused){var p=silentEl.play();if(p&&p.catch)p.catch(function(){})}
+    else if(!on&&!silentEl.paused)silentEl.pause();
+  }catch(e){}
+}
+function unlock(){
+  try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
+  if(!window.AudioContext&&!window.webkitAudioContext)throw new Error("Web Audio недоступен");
+  if(!actx)initAudio();
+  if(actx.state!=="running"){var p=actx.resume();if(p&&p.catch)p.catch(function(){})}
+  var b=actx.createBuffer(1,1,22050),s=actx.createBufferSource();s.buffer=b;s.connect(actx.destination);s.start(0);
+  if(running||queued.some(function(q){return q!==undefined&&q>=0}))silent(true);
+}
+function gesture(){try{unlock()}catch(e){showErr(e)}}
+["touchend","click","keydown"].forEach(function(ev){document.addEventListener(ev,gesture,true)});
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&actx&&actx.state!=="running"){var p=actx.resume();if(p&&p.catch)p.catch(function(){})}});
+
+function launch(tr,ci){
+  gesture();if(!actx)return;
+  var cur=queued[tr]!==undefined?queued[tr]:playing[tr];
+  queued[tr]=cur===ci?-1:ci;
+  var c=SY[tr].clips[ci];
+  if(queued[tr]>=0)say("<b>"+c.n+"</b> · "+(tr?(c.rc?c.rc.n:"FM"):(c.kit||KIT0).n)+" · "+bpm+" bpm");
+  if(!running){running=true;gstep=0;nextT=actx.currentTime+.06;silent(true);tick()}
+}
+
+/* pads */
+var padsEl=document.getElementById("pads"),padEls=[[],[],[],[]];
+[].forEach.call(padsEl.querySelectorAll(".pad"),function(b){
+  var tr=+b.dataset.tr,ci=+b.dataset.ci;padEls[tr][ci]=b;
+  var fired=0;
+  b.addEventListener("pointerdown",function(e){if(e.pointerType==="mouse"&&e.button!==0)return;fired=Date.now();launch(tr,ci)});
+  b.addEventListener("click",function(){if(Date.now()-fired>700)launch(tr,ci)}); // keyboard / no pointer events
+  b.addEventListener("contextmenu",function(e){e.preventDefault()});
+});
+var lastLbl=[];
+function paintLabels(flash){
+  for(var tr=0;tr<NT;tr++)for(var ci=0;ci<NC;ci++){
+    var b=padEls[tr][ci],c=SY[tr].clips[ci];
+    b.querySelector(".rc").textContent=tr?(c.rc?c.rc.n:"FM"):(c.kit||KIT0).n;
+    b.setAttribute("aria-label",TR[tr]+": "+c.n);
+    if(flash){b.classList.remove("flash");void b.offsetWidth;b.style.animationDelay=(tr*40+ci*70)+"ms";b.classList.add("flash")}
+  }
+  lastLbl=[];
+}
+paintLabels(false);
+padsEl.addEventListener("animationend",function(e){if(e.animationName==="flash"){e.target.classList.remove("flash");e.target.style.animationDelay=""}});
+
+document.getElementById("regen").addEventListener("click",regen);
+document.getElementById("dice").addEventListener("click",dice);
+document.getElementById("spice").addEventListener("click",spice);
+document.addEventListener("keydown",function(e){
+  if(e.metaKey||e.ctrlKey||e.altKey||e.repeat)return;
+  var k=e.key.toLowerCase();
+  if(k==="r"||k==="к")regen();else if(k==="d"||k==="в")dice();else if(k==="s"||k==="ы")spice();
+});
+
+function frame(){
+  var now=actx?actx.currentTime:0;
+  while(evq.length&&evq[0].t<=now){var e=evq.shift();vis.on[e.tr]=e.clip;vis.ls[e.tr]=e.t;vis.ll[e.tr]=e.len}
+  for(var tr=0;tr<NT;tr++)for(var ci=0;ci<NC;ci++){
+    var b=padEls[tr][ci],on=vis.on[tr]===ci,q=queued[tr]===ci,qs=queued[tr]===-1&&on,id=tr+"-"+ci;
+    var lbl=(q?"› ":qs?"× ":"")+SY[tr].clips[ci].n;
+    if(lastLbl[id]!==lbl){b.querySelector(".lbl").textContent=lbl;lastLbl[id]=lbl}
+    b.classList.toggle("on",on);b.classList.toggle("q",q||qs);
+    if(on)b.style.setProperty("--p",Math.min(1,Math.max(0,(now-vis.ls[tr])/vis.ll[tr])));
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+if(window.AudioContext||window.webkitAudioContext)document.getElementById("nojs").hidden=true;
+</script>
+</body>
+</html>
